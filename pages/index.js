@@ -330,13 +330,6 @@ export default function Home() {
 
   return (
     <>
-      <Head>
-        <title>Business Finder</title>
-        <meta name="description" content="Find local businesses near you" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
       <Container
         maxWidth="lg"
         sx={{
@@ -344,15 +337,6 @@ export default function Home() {
           px: { xs: 1, sm: 2, md: 3 },
         }}
       >
-        <Box sx={{ textAlign: "center", mb: 4 }}>
-          <Typography variant="h3" component="h1" gutterBottom color="primary">
-            Business Finder
-          </Typography>
-          <Typography variant="h6" color="text.secondary">
-            Find local service providers and track your calls
-          </Typography>
-        </Box>
-
         {/* Tabs */}
         <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
           <Tabs value={activeTab} onChange={handleTabChange} centered>

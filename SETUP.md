@@ -4,6 +4,8 @@
 
 1. Sign up for a SerpAPI account at https://serpapi.com/
 2. Get your API key from the SerpAPI dashboard
+3. Set up a MongoDB cluster (MongoDB Atlas recommended)
+4. Get your MongoDB connection URI
 
 ## Environment Variables
 
@@ -11,6 +13,21 @@ Create a `.env.local` file in the root directory with the following content:
 
 ```
 SERPAPI_API_KEY=your_actual_serpapi_api_key_here
+MONGO_URI=your_mongodb_connection_uri_here
+```
+
+### MongoDB Setup
+
+1. Go to [MongoDB Atlas](https://cloud.mongodb.com/)
+2. Create a free cluster
+3. Create a database user
+4. Whitelist your IP address (or use 0.0.0.0/0 for development)
+5. Get your connection string and replace `<password>` with your actual password
+
+Example MongoDB URI format:
+
+```
+mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/
 ```
 
 ## Installation
@@ -38,16 +55,28 @@ npm run dev
 - Responsive design using Material-UI 5
 - Clickable phone numbers and website links
 - Star ratings and review counts
+- **Phone call tracking** - Automatically logs when users call businesses to MongoDB
 
 ## Business Types Supported
 
 - Roofing
 - HVAC
-- Moving Companies
-- Construction Labor
-- Security Services
-- Home Care
-- Warehouse Staffing
-- Delivery Services
+- Fencing
+- Plumbing
+- Electrical
+- Siding
+- Landscaping
+- Home cleaning
+- Commercial cleaning
+- Security services
+- Painting
 - Janitorial
-- Restaurant Staff
+
+## Database Schema
+
+The app automatically creates a `business_finder` database with a `phone_calls` collection that tracks:
+
+- Business information
+- Call timestamps
+- Call counts
+- First and last call dates

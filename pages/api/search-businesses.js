@@ -1,3 +1,5 @@
+import clientPromise from "../../lib/mongodb";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
@@ -51,12 +53,52 @@ export default async function handler(req, res) {
         thumbnail: business.thumbnail || null,
       })) || [];
 
-    res.status(200).json({
-      success: true,
-      query,
-      results: formattedResults,
-      totalResults: formattedResults.length,
-    });
+    // Check which businesses have been called before
+    try {
+      const client = await clientPromise;
+      const db = client.db("business_finder");
+      const collection = db.collection("phone_calls");
+
+      // Get all the business IDs from search results
+      const businessIds = formattedResults.map((business) => business.id);
+
+      // Find which ones have been called before
+      const calledBusinesses = await collection
+        .find({ businessId: { $in: businessIds } })
+        .toArray();
+
+      // Create a Set for faster lookup
+      const calledBusinessIds = new Set(
+        calledBusinesses.map((record) => record.businessId)
+      );
+
+      // Add previously_called property to each result
+      const resultsWithCallStatus = formattedResults.map((business) => ({
+        ...business,
+        previously_called: calledBusinessIds.has(business.id),
+      }));
+
+      res.status(200).json({
+        success: true,
+        query,
+        results: resultsWithCallStatus,
+        totalResults: resultsWithCallStatus.length,
+      });
+    } catch (dbError) {
+      console.warn("Could not check call history:", dbError);
+      // If database check fails, still return results without call status
+      const resultsWithCallStatus = formattedResults.map((business) => ({
+        ...business,
+        previously_called: false,
+      }));
+
+      res.status(200).json({
+        success: true,
+        query,
+        results: resultsWithCallStatus,
+        totalResults: resultsWithCallStatus.length,
+      });
+    }
   } catch (error) {
     console.error("Search error:", error);
     res.status(500).json({

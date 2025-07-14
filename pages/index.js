@@ -26,14 +26,16 @@ import { Phone, Web, Star, LocationOn } from "@mui/icons-material";
 const businessTypes = [
   "Roofing",
   "HVAC",
-  "Moving Companies",
-  "Construction Labor",
-  "Security Services",
-  "Home Care",
-  "Warehouse Staffing",
-  "Delivery Services",
+  "Fencing",
+  "Plumbing",
+  "Electrical",
+  "Siding",
+  "Landscaping",
+  "Home cleaning",
+  "Commercial cleaning",
+  "Security services",
+  "Painting",
   "Janitorial",
-  "Restaurant Staff",
 ];
 
 export default function Home() {
@@ -124,8 +126,15 @@ export default function Home() {
         <Card sx={{ mb: 4 }}>
           <CardContent>
             <Box component="form" onSubmit={handleSearch}>
-              <Grid container spacing={3} alignItems="center">
-                <Grid item xs={12} md={4}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 3,
+                  alignItems: "stretch",
+                }}
+              >
+                <Box sx={{ flex: { xs: "none", md: 1 } }}>
                   <TextField
                     fullWidth
                     label="Zip Code"
@@ -135,8 +144,8 @@ export default function Home() {
                     variant="outlined"
                     inputProps={{ maxLength: 5, pattern: "[0-9]{5}" }}
                   />
-                </Grid>
-                <Grid item xs={12} md={4}>
+                </Box>
+                <Box sx={{ flex: { xs: "none", md: 1 } }}>
                   <FormControl fullWidth>
                     <InputLabel>Service Type</InputLabel>
                     <Select
@@ -151,8 +160,8 @@ export default function Home() {
                       ))}
                     </Select>
                   </FormControl>
-                </Grid>
-                <Grid item xs={12} md={4}>
+                </Box>
+                <Box sx={{ flex: { xs: "none", md: 1 } }}>
                   <Button
                     type="submit"
                     variant="contained"
@@ -163,8 +172,8 @@ export default function Home() {
                   >
                     {loading ? <CircularProgress size={24} /> : "Search"}
                   </Button>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </Box>
           </CardContent>
         </Card>
@@ -207,7 +216,6 @@ export default function Home() {
                         flexDirection: "column",
                         minHeight: 300,
                         width: "100%",
-                        padding: 2,
                       }}
                     >
                       <CardContent sx={{ flexGrow: 1 }}>

@@ -31,6 +31,7 @@ import {
   History,
   Search,
   CheckCircle,
+  Refresh,
 } from "@mui/icons-material";
 
 const businessTypes = [
@@ -48,6 +49,9 @@ const businessTypes = [
   "Janitorial",
 ];
 
+// Top 10 states for home services
+const TOP_STATES = ["CA", "TX", "FL", "NY", "PA", "IL", "OH", "GA", "NC", "MI"];
+
 export default function Home() {
   const [zipCode, setZipCode] = useState("");
   const [service, setService] = useState("");
@@ -61,6 +65,93 @@ export default function Home() {
   const [callHistory, setCallHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
+
+  // New state for zip code selection
+  const [randomZipCodes, setRandomZipCodes] = useState([]);
+  const [selectedZipChip, setSelectedZipChip] = useState(null);
+  const [zipDataLoading, setZipDataLoading] = useState(true);
+  const [zipDataCache, setZipDataCache] = useState(null);
+  const [regenerating, setRegenerating] = useState(false);
+
+  // Function to select random zip codes from cached data
+  const selectRandomZipCodes = (zipData) => {
+    // Extract zip codes from top 10 states
+    const allZipCodes = [];
+
+    TOP_STATES.forEach((state) => {
+      if (zipData[state] && zipData[state].cities) {
+        Object.values(zipData[state].cities).forEach((zipArray) => {
+          if (Array.isArray(zipArray)) {
+            zipArray.forEach((zip) => {
+              if (
+                typeof zip === "number" ||
+                (typeof zip === "string" && zip.length === 5)
+              ) {
+                allZipCodes.push(String(zip).padStart(5, "0"));
+              }
+            });
+          }
+        });
+      }
+    });
+
+    // Remove duplicates and randomly select 10
+    const uniqueZipCodes = [...new Set(allZipCodes)];
+    const shuffled = uniqueZipCodes.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 10);
+  };
+
+  // Load and process zip code data
+  useEffect(() => {
+    const loadZipCodes = async () => {
+      try {
+        const response = await fetch("/zipcode.json");
+        const zipData = await response.json();
+
+        // Cache the data for regeneration
+        setZipDataCache(zipData);
+
+        // Select initial random zip codes
+        const selected = selectRandomZipCodes(zipData);
+        setRandomZipCodes(selected);
+      } catch (error) {
+        console.error("Error loading zip codes:", error);
+      } finally {
+        setZipDataLoading(false);
+      }
+    };
+
+    loadZipCodes();
+  }, []);
+
+  // Regenerate zip codes
+  const handleRegenerateZipCodes = () => {
+    if (!zipDataCache) return;
+
+    setRegenerating(true);
+    setSelectedZipChip(null); // Clear any selected chip
+    setZipCode(""); // Clear the input field
+
+    // Add a small delay for visual feedback
+    setTimeout(() => {
+      const newZipCodes = selectRandomZipCodes(zipDataCache);
+      setRandomZipCodes(newZipCodes);
+      setRegenerating(false);
+    }, 500);
+  };
+
+  // Handle zip code chip selection
+  const handleZipChipClick = (zip) => {
+    setSelectedZipChip(zip);
+    setZipCode(zip);
+  };
+
+  // Clear chip selection when zip code is manually changed
+  useEffect(() => {
+    if (zipCode !== selectedZipChip) {
+      setSelectedZipChip(null);
+    }
+  }, [zipCode, selectedZipChip]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -351,6 +442,62 @@ export default function Home() {
             {/* Search Form */}
             <Card sx={{ mb: 4 }}>
               <CardContent>
+                {/* Quick Zip Code Selection */}
+                {!zipDataLoading && randomZipCodes.length > 0 && (
+                  <Box sx={{ mb: 3 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        mb: 2,
+                      }}
+                    >
+                      <Typography variant="subtitle1">
+                        Quick Zip Code Selection
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={handleRegenerateZipCodes}
+                        disabled={regenerating}
+                        startIcon={
+                          regenerating ? (
+                            <CircularProgress size={16} />
+                          ) : (
+                            <Refresh />
+                          )
+                        }
+                        sx={{ minWidth: 120 }}
+                      >
+                        {regenerating ? "Generating..." : "Regenerate"}
+                      </Button>
+                    </Box>
+                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                      {randomZipCodes.map((zip) => (
+                        <Chip
+                          key={zip}
+                          label={zip}
+                          onClick={() => handleZipChipClick(zip)}
+                          color={
+                            selectedZipChip === zip ? "primary" : "default"
+                          }
+                          variant={
+                            selectedZipChip === zip ? "filled" : "outlined"
+                          }
+                          sx={{
+                            cursor: "pointer",
+                            opacity: regenerating ? 0.6 : 1,
+                            transition: "opacity 0.3s ease",
+                          }}
+                          disabled={regenerating}
+                        />
+                      ))}
+                    </Box>
+                    <Divider sx={{ mt: 2 }} />
+                  </Box>
+                )}
+
                 <Box component="form" onSubmit={handleSearch}>
                   <Box
                     sx={{

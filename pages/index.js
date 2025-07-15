@@ -22,6 +22,11 @@ import {
   Divider,
   Tabs,
   Tab,
+  Paper,
+  Badge,
+  useMediaQuery,
+  useTheme,
+  Snackbar,
 } from "@mui/material";
 import {
   Phone,
@@ -32,6 +37,10 @@ import {
   Search,
   CheckCircle,
   Refresh,
+  Add,
+  Download,
+  ContactPhone,
+  Clear,
 } from "@mui/icons-material";
 
 const businessTypes = [
@@ -72,6 +81,92 @@ export default function Home() {
   const [zipDataLoading, setZipDataLoading] = useState(true);
   const [zipDataCache, setZipDataCache] = useState(null);
   const [regenerating, setRegenerating] = useState(false);
+
+  // Contact list state
+  const [contactList, setContactList] = useState([]);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+
+  // Check if desktop
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
+
+  // Contact list management functions
+  const clearContactList = () => {
+    setContactList([]);
+    setSnackbarMessage("Contact list cleared");
+    setSnackbarOpen(true);
+  };
+
+  const exportContactList = () => {
+    if (contactList.length === 0) {
+      setSnackbarMessage("No contacts to export");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // Create tab-delimited content (phone number first, then name)
+    const header = "Phone\tName\n";
+    const content = contactList
+      .map((contact) => {
+        const phone = contact.phone ? contact.phone.replace(/\D/g, "") : "";
+        const name = contact.name || "Unknown";
+        return `${phone}\t${name}`;
+      })
+      .join("\n");
+
+    const fullContent = header + content;
+
+    // Create and download the file
+    const blob = new Blob([fullContent], { type: "text/plain;charset=utf-8" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `skybroadcast_contacts_${
+      new Date().toISOString().split("T")[0]
+    }.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    setSnackbarMessage(`Exported ${contactList.length} contacts to file`);
+    setSnackbarOpen(true);
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
+
+  // Bulk add all search results to contact list
+  const addAllToContactList = () => {
+    if (results.length === 0) {
+      setSnackbarMessage("No search results to add");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // Filter out businesses that are already in the contact list
+    const newContacts = results.filter(
+      (business) =>
+        business.phone &&
+        !contactList.some((contact) => contact.id === business.id)
+    );
+
+    if (newContacts.length === 0) {
+      setSnackbarMessage("All businesses are already in your contact list");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    setContactList((prev) => [...prev, ...newContacts]);
+    setSnackbarMessage(
+      `Added ${newContacts.length} new contact${
+        newContacts.length === 1 ? "" : "s"
+      } to list`
+    );
+    setSnackbarOpen(true);
+  };
 
   // Function to select random zip codes from cached data
   const selectRandomZipCodes = (zipData) => {
@@ -558,13 +653,93 @@ export default function Home() {
               </Alert>
             )}
 
+            {/* Contact List Management - Desktop Only */}
+            {isDesktop && (
+              <Paper sx={{ p: 3, mb: 3, bgcolor: "background.default" }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 2,
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  >
+                    <ContactPhone />
+                    Contact List
+                    <Badge
+                      badgeContent={contactList.length}
+                      color="primary"
+                      max={9999}
+                    >
+                      <Chip
+                        label={`${contactList.length} contacts`}
+                        size="small"
+                      />
+                    </Badge>
+                  </Typography>
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={clearContactList}
+                      disabled={contactList.length === 0}
+                      startIcon={<Clear />}
+                    >
+                      Clear List
+                    </Button>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={exportContactList}
+                      disabled={contactList.length === 0}
+                      startIcon={<Download />}
+                    >
+                      Export for Skybroadcast
+                    </Button>
+                  </Box>
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  Add businesses from search results to build your contact list.
+                  Export as tab-delimited .txt for Skybroadcast campaigns.
+                  {contactList.length > 0 &&
+                    ` Ready to export ${contactList.length} contact${
+                      contactList.length === 1 ? "" : "s"
+                    }.`}
+                </Typography>
+              </Paper>
+            )}
+
             {/* Search Results */}
             {searched && !loading && (
               <Box>
-                <Typography variant="h5" gutterBottom>
-                  Search Results{" "}
-                  {results.length > 0 && `(${results.length} found)`}
-                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 2,
+                  }}
+                >
+                  <Typography variant="h5">
+                    Search Results{" "}
+                    {results.length > 0 && `(${results.length} found)`}
+                  </Typography>
+                  {isDesktop && results.length > 0 && (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={addAllToContactList}
+                      startIcon={<Add />}
+                      sx={{ ml: 2 }}
+                    >
+                      Add All to List ({results.filter((r) => r.phone).length})
+                    </Button>
+                  )}
+                </Box>
                 <Divider sx={{ mb: 3 }} />
 
                 {results.length === 0 ? (
@@ -656,6 +831,15 @@ export default function Home() {
           </Box>
         )}
       </Container>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        message={snackbarMessage}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      />
     </>
   );
 }
